@@ -1,20 +1,17 @@
 from cassandra.cluster import Cluster, Session
 from cassandra.query import ValueSequence
 
-def _execute_many(self, statements):
-    futures = []
-    results = []
-
-    for statement in statements:
-        futures.append(self.execute_async(statement))
+def _execute_many(self, queries, trace=False):
+    """
+    Executes many queries in parallel and synchronously waits for the responses.
+    """
+    futures = (self.execute_async(query, trace=trace) for query in queries)
 
     for future in futures:
         try:
-            results.append(future.result())
+            yield future.result()
         except Exception:
-            results.append(None)
-
-    return results
+            yield None
 
 Session.execute_many = _execute_many
 
