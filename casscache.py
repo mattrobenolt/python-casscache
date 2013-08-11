@@ -42,6 +42,7 @@ class Client(object):
         # Prepare all of the necessary statements beforehand
         self._GET = self._session.prepare("SELECT value, flags FROM %s WHERE key = ? LIMIT 1" % self.column_family)
         self._SET = self._session.prepare("INSERT INTO %s (key, value, flags) VALUES (?, ?, ?)" % self.column_family)
+        self._DELETE = self._session.prepare("DELETE FROM %s WHERE key = ?" % self.column_family)
         # Cannot be prepared with a dynamic TTL pre C* 2.0
         # See https://issues.apache.org/jira/browse/CASSANDRA-4450
         self._SET_TTL = "INSERT INTO %s (key, value, flags) VALUES (?, ?, ?) USING TTL %%d" % self.column_family
@@ -59,21 +60,24 @@ class Client(object):
         return result
 
     def set(self, key, value, ttl=0):
-        if ttl == 0:
-            statement = self._SET
-        else:
-            statement = self._session.prepare(self._SET_TTL % ttl)
+        statement = self._get_set_statement(ttl)
         self._session.execute(statement.bind((key, value, 0)))
         return True
 
-    def set_multi(self, keys):
-        pass
+    def set_multi(self, pairs, ttl=0):
+        statement = self._get_set_statement(ttl)
+        list(self._session.execute_many((statement.bind((key, value, 0)) for key, value in pairs.iteritems())))
+        return True
 
     def delete(self, key):
-        query = "DELETE FROM %s WHERE key = ?" % self.column_family
+        statement = self._DELETE
+        self._session.execute(statement.bind((key,)))
+        return True
 
     def delete_multi(self, keys):
-        query = "DELETE FROM %s WHERE key IN ?" % self.column_family
+        statement = self._DELETE
+        list(self._session.execute_many((statement.bind((key,)) for key in keys)))
+        return True
 
     def disconnect_all(self):
         self._cluster.shutdown()
@@ -88,6 +92,12 @@ class Client(object):
     def flush_all(self):
         query = "TRUNCATE %s" % self.column_family
         self._session.execute(query)
+        return True
+
+    def _get_set_statement(self, ttl=0):
+        if ttl == 0:
+            return self._SET
+        return self._session.prepare(self._SET_TTL % ttl)
 
     def _handle_row(self, rows):
         try:
