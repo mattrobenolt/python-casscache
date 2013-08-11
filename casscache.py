@@ -8,19 +8,20 @@ except ImportError:
     ConnectionClass = AsyncoreConnection
 
 
-def _execute_many(self, queries, trace=False):
-    """
-    Executes many queries in parallel and synchronously waits for the responses.
-    """
-    futures = (self.execute_async(query, trace=trace) for query in queries)
+if not hasattr(Session, 'execute_many'):
+    def _execute_many(self, queries, trace=False):
+        """
+        Executes many queries in parallel and synchronously waits for the responses.
+        """
+        futures = (self.execute_async(query, trace=trace) for query in queries)
 
-    for future in futures:
-        try:
-            yield future.result()
-        except Exception:
-            yield None
+        for future in futures:
+            try:
+                yield future.result()
+            except Exception:
+                yield None
 
-Session.execute_many = _execute_many
+    Session.execute_many = _execute_many
 
 
 class Client(object):
