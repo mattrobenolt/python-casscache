@@ -52,7 +52,11 @@ class Client(object):
 
     def get_multi(self, keys):
         statement = self._GET
-        return map(self._handle_row, self._session.execute_many((statement.bind((key,)) for key in keys)))
+        result = {}
+        for idx, value in enumerate(map(self._handle_row, self._session.execute_many((statement.bind((key,)) for key in keys)))):
+            if value is not None:
+                result[keys[idx]] = value
+        return result
 
     def set(self, key, value, ttl=0):
         if ttl == 0:
