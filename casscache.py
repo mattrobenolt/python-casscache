@@ -89,6 +89,12 @@ class Client(object):
     def get_slabs(self, *args, **kwargs):
         return []
 
+    def incr(self, key, delta=1):
+        return None
+
+    def decr(self, key, delta=1):
+        return None
+
     def flush_all(self):
         query = "TRUNCATE %s" % self.columnfamily
         self._session.execute(query)
