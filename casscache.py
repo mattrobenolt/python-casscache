@@ -25,7 +25,7 @@ if not hasattr(Session, 'execute_many'):
 
 
 class Client(object):
-    def __init__(self, servers, **kwargs):
+    def __init__(self, servers, keyspace, columnfamily, **kwargs):
         hosts, port = set(), '9042'
         for server in servers:
             host, port = server.split(':', 1)
@@ -35,18 +35,17 @@ class Client(object):
         self._cluster.connection_class = ConnectionClass
         self._session = self._cluster.connect()
 
-        self.keyspace = "cache"
-        self.column_family = "memcached"
-
+        self.keyspace = keyspace
+        self.columnfamily = columnfamily
         self._session.set_keyspace(self.keyspace)
 
         # Prepare all of the necessary statements beforehand
-        self._GET = self._session.prepare("SELECT value, flags FROM %s WHERE key = ? LIMIT 1" % self.column_family)
-        self._SET = self._session.prepare("INSERT INTO %s (key, value, flags) VALUES (?, ?, ?)" % self.column_family)
-        self._DELETE = self._session.prepare("DELETE FROM %s WHERE key = ?" % self.column_family)
+        self._GET = self._session.prepare("SELECT value, flags FROM %s WHERE key = ? LIMIT 1" % self.columnfamily)
+        self._SET = self._session.prepare("INSERT INTO %s (key, value, flags) VALUES (?, ?, ?)" % self.columnfamily)
+        self._DELETE = self._session.prepare("DELETE FROM %s WHERE key = ?" % self.columnfamily)
         # Cannot be prepared with a dynamic TTL pre C* 2.0
         # See https://issues.apache.org/jira/browse/CASSANDRA-4450
-        self._SET_TTL = "INSERT INTO %s (key, value, flags) VALUES (?, ?, ?) USING TTL %%d" % self.column_family
+        self._SET_TTL = "INSERT INTO %s (key, value, flags) VALUES (?, ?, ?) USING TTL %%d" % self.columnfamily
 
     def get(self, key):
         statement = self._GET
@@ -91,7 +90,7 @@ class Client(object):
         return []
 
     def flush_all(self):
-        query = "TRUNCATE %s" % self.column_family
+        query = "TRUNCATE %s" % self.columnfamily
         self._session.execute(query)
         return True
 
