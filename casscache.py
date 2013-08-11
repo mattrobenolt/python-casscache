@@ -67,17 +67,17 @@ class Client(object):
     def set_multi(self, pairs, ttl=0):
         statement = self._get_set_statement(ttl)
         list(self._session.execute_many((statement.bind((key, value, 0)) for key, value in pairs.iteritems())))
-        return True
+        return 0
 
-    def delete(self, key):
+    def delete(self, key, time=0):
         statement = self._DELETE
         self._session.execute(statement.bind((key,)))
-        return True
+        return 1
 
-    def delete_multi(self, keys):
+    def delete_multi(self, keys, time=0):
         statement = self._DELETE
         list(self._session.execute_many((statement.bind((key,)) for key in keys)))
-        return True
+        return 1
 
     def disconnect_all(self):
         self._cluster.shutdown()
@@ -98,7 +98,6 @@ class Client(object):
     def flush_all(self):
         query = "TRUNCATE %s" % self.columnfamily
         self._session.execute(query)
-        return True
 
     def _get_set_statement(self, ttl=0):
         if ttl == 0:
