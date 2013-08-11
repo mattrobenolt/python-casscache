@@ -1,5 +1,12 @@
 from cassandra.cluster import Cluster, Session
-from cassandra.query import ValueSequence
+
+try:
+    from cassandra.io.libevreactor import LibevConnection
+    ConnectionClass = LibevConnection
+except ImportError:
+    from cassandra.io.asyncorereactor import AsyncoreConnection
+    ConnectionClass = AsyncoreConnection
+
 
 def _execute_many(self, queries, trace=False):
     """
@@ -24,6 +31,7 @@ class Client(object):
             hosts.add(host)
 
         self._cluster = Cluster(hosts, port=int(port), **kwargs)
+        self._cluster.connection_class = ConnectionClass
         self._session = self._cluster.connect()
 
         self.keyspace = "cache"
