@@ -13,7 +13,7 @@ if not hasattr(Session, 'execute_many'):
         """
         Executes many queries in parallel and synchronously waits for the responses.
         """
-        futures = (self.execute_async(query, trace=trace) for query in queries)
+        futures = [self.execute_async(query, trace=trace) for query in queries]
 
         for future in futures:
             try:
