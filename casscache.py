@@ -12,6 +12,11 @@ try:
 except Exception:
     VERSION = 'unknown'
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle  # noqa
+
 from cassandra.cluster import Cluster, Session
 
 try:
@@ -43,7 +48,6 @@ class Client(object):
     _FLAG_PICKLE = 1 << 0
     _FLAG_INTEGER = 1 << 1
     _FLAG_LONG = 1 << 2
-    _FLAG_COMPRESSED = 1 << 3
 
     def __init__(self, servers, keyspace, columnfamily, **kwargs):
         hosts, port = set(), '9042'
@@ -89,13 +93,13 @@ class Client(object):
 
     def set(self, key, val, time=0, min_compress_len=0):
         statement = self._get_set_statement(time)
-        self._session.execute(statement.bind((key, val, 0)))
+        self._session.execute(statement.bind((key,) + self._val_to_store_info(val)))
         return True
 
     def set_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
         statement = self._get_set_statement(time)
         prefixed_keys = self._prefix_keys(mapping.keys(), key_prefix)
-        list(self._session.execute_many((statement.bind((prefixed_keys[idx], value, 0)) for idx, value in enumerate(mapping.values()))))
+        list(self._session.execute_many((statement.bind((prefixed_keys[idx],) + self._val_to_store_info(value)) for idx, value in enumerate(mapping.values()))))
         return 0
 
     def delete(self, key, time=0):
@@ -119,9 +123,32 @@ class Client(object):
 
     def _handle_row(self, rows):
         try:
-            return rows[0].value
-        except (IndexError, TypeError):
+            row = rows[0]
+            val, flags = row.value, row.flags
+            if flags == 0:
+                # Either a bare string or a compressed string now decompressed...
+                return val
+            elif flags & Client._FLAG_INTEGER:
+                return int(val)
+            elif flags & Client._FLAG_LONG:
+                return long(val)
+            elif flags & Client._FLAG_PICKLE:
+                return pickle.loads(val)
             return None
+        except Exception:
+            return None
+
+    def _val_to_store_info(self, val):
+        """
+           Transform val to a storable representation, returning a tuple of the flags, the length of the new value, and the new value itself.
+        """
+        if isinstance(val, str):
+            return val, 0
+        elif isinstance(val, int):
+            return "%d" % val, Client._FLAG_INTEGER
+        elif isinstance(val, long):
+            return "%d" % val, Client._FLAG_LONG
+        return pickle.dumps(val, protocol=pickle.HIGHEST_PROTOCOL), Client._FLAG_PICKLE
 
     def get_stats(self, *args, **kwargs):
         return []
