@@ -39,6 +39,12 @@ if not hasattr(Session, 'execute_many'):
 
 
 class Client(object):
+
+    _FLAG_PICKLE = 1 << 0
+    _FLAG_INTEGER = 1 << 1
+    _FLAG_LONG = 1 << 2
+    _FLAG_COMPRESSED = 1 << 3
+
     def __init__(self, servers, keyspace, columnfamily, **kwargs):
         hosts, port = set(), '9042'
         for server in servers:
@@ -65,24 +71,31 @@ class Client(object):
         statement = self._GET
         return self._handle_row(self._session.execute(statement.bind((key,))))
 
-    def get_multi(self, keys):
+    def _prefix_keys(self, keys, key_prefix):
+        if not key_prefix:
+            return keys
+        return [key_prefix + key for key in keys]
+
+    def get_multi(self, keys, key_prefix=''):
         statement = self._GET
         result = {}
+        prefixed_keys = self._prefix_keys(keys, key_prefix)
         for idx, value in enumerate(map(self._handle_row,
                                         self._session.execute_many((statement.bind((key,))
-                                        for key in keys)))):
+                                        for key in prefixed_keys)))):
             if value is not None:
                 result[keys[idx]] = value
         return result
 
-    def set(self, key, value, ttl=0):
-        statement = self._get_set_statement(ttl)
-        self._session.execute(statement.bind((key, value, 0)))
+    def set(self, key, val, time=0, min_compress_len=0):
+        statement = self._get_set_statement(time)
+        self._session.execute(statement.bind((key, val, 0)))
         return True
 
-    def set_multi(self, pairs, ttl=0):
-        statement = self._get_set_statement(ttl)
-        list(self._session.execute_many((statement.bind((key, value, 0)) for key, value in pairs.iteritems())))
+    def set_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
+        statement = self._get_set_statement(time)
+        prefixed_keys = self._prefix_keys(mapping.keys(), key_prefix)
+        list(self._session.execute_many((statement.bind((prefixed_keys[idx], value, 0)) for idx, value in enumerate(mapping.values()))))
         return 0
 
     def delete(self, key, time=0):
@@ -90,38 +103,52 @@ class Client(object):
         self._session.execute(statement.bind((key,)))
         return 1
 
-    def delete_multi(self, keys, time=0):
+    def delete_multi(self, keys, time=0, key_prefix=''):
         statement = self._DELETE
-        list(self._session.execute_many((statement.bind((key,)) for key in keys)))
+        prefixed_keys = self._prefix_keys(keys, key_prefix)
+        list(self._session.execute_many((statement.bind((key,)) for key in prefixed_keys)))
         return 1
 
     def disconnect_all(self):
         self._cluster.shutdown()
 
-    def get_stats(self, *args, **kwargs):
-        """ No support for this in C* """
-        return []
-
-    def get_slabs(self, *args, **kwargs):
-        return []
-
-    def incr(self, key, delta=1):
-        return None
-
-    def decr(self, key, delta=1):
-        return None
-
-    def flush_all(self):
-        query = "TRUNCATE %s" % self.columnfamily
-        self._session.execute(query)
-
-    def _get_set_statement(self, ttl=0):
-        if ttl == 0:
+    def _get_set_statement(self, time=0):
+        if time == 0:
             return self._SET
-        return self._session.prepare(self._SET_TTL % ttl)
+        return self._session.prepare(self._SET_TTL % time)
 
     def _handle_row(self, rows):
         try:
             return rows[0].value
         except (IndexError, TypeError):
             return None
+
+    def get_stats(self, *args, **kwargs):
+        return []
+
+    def get_slabs(self, *args, **kwargs):
+        return []
+
+    def incr(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def decr(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def add(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def append(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def prepend(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def replace(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def cas(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def gets(self, *args, **kwargs):
+        raise NotImplementedError
