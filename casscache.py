@@ -1,3 +1,17 @@
+"""
+casscache
+~~~~~~~~~
+
+:copyright: (c) 2013 by Matt Robenolt, see AUTHORS for more details.
+:license: BSD, see LICENSE for more details.
+"""
+
+try:
+    VERSION = __import__('pkg_resources') \
+        .get_distribution('casscache').version
+except Exception:
+    VERSION = 'unknown'
+
 from cassandra.cluster import Cluster, Session
 
 try:
@@ -54,7 +68,9 @@ class Client(object):
     def get_multi(self, keys):
         statement = self._GET
         result = {}
-        for idx, value in enumerate(map(self._handle_row, self._session.execute_many((statement.bind((key,)) for key in keys)))):
+        for idx, value in enumerate(map(self._handle_row,
+                                        self._session.execute_many((statement.bind((key,))
+                                        for key in keys)))):
             if value is not None:
                 result[keys[idx]] = value
         return result

@@ -3,7 +3,10 @@
 python-casscache
 ~~~~~~~~~~~~~~~~
 
-:copyright: (c) 2013 by Matt Robenolt.
+Casscache is a python-memcached compatible API for interfacing
+with Cassandra.
+
+:copyright: (c) 2013 by Matt Robenolt, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
 
@@ -15,7 +18,7 @@ setup(
     author='Matt Robenolt',
     author_email='matt@ydekproductions.com',
     url='https://github.com/mattrobenolt/python-casscache',
-    description='stuff',
+    description='Casscache is a python-memcached compatible API for interfacing with Cassandra',
     license='BSD',
     long_description=__doc__,
     packages=find_packages(exclude=['tests']),
