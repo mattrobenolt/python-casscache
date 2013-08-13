@@ -19,7 +19,12 @@ setup(
     license='BSD',
     long_description=__doc__,
     packages=find_packages(exclude=['tests']),
-    install_requires=[],
+    install_requires=[
+        'cassandra==0.1.4'
+    ],
+    dependency_links=[
+        'https://github.com/datastax/python-driver/archive/3233bf4e8edfefff898aa4fa8cdd5d5013e3f0d3.zip#egg=cassandra-0.1.4',
+    ],
     py_modules=['casscache'],
     zip_safe=True,
     classifiers=[
