@@ -1,4 +1,8 @@
-import unittest
+try:
+    import unittest
+except ImportError:
+    import unittest2 as unittest
+
 from casscache import Client
 from cassandra.cluster import Cluster
 
