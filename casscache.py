@@ -113,6 +113,9 @@ class Client(object):
         list(self._session.execute_many((statement.bind((key,)) for key in prefixed_keys)))
         return 1
 
+    def flush_all(self):
+        self._session.execute("TRUNCATE %s" % self.columnfamily)
+
     def disconnect_all(self):
         self._cluster.shutdown()
 

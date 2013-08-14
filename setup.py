@@ -10,7 +10,7 @@ with Cassandra.
 :license: BSD, see LICENSE for more details.
 """
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='casscache',
@@ -21,14 +21,14 @@ setup(
     description='Casscache is a python-memcached compatible API for interfacing with Cassandra',
     license='BSD',
     long_description=__doc__,
-    packages=find_packages(exclude=['tests']),
     install_requires=[
         'cassandra==0.1.4'
     ],
     dependency_links=[
-        'https://github.com/datastax/python-driver/archive/3233bf4e8edfefff898aa4fa8cdd5d5013e3f0d3.zip#egg=cassandra-0.1.4',
+        'https://github.com/mattrobenolt/python-driver/archive/4faa2954a1027fd8f92bb5efa86e27d21291c2e6.zip#egg=cassandra-0.1.4',
     ],
     py_modules=['casscache'],
+    test_suite='test_casscache',
     zip_safe=True,
     classifiers=[
         'Development Status :: 4 - Beta',
