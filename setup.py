@@ -22,10 +22,7 @@ setup(
     license='BSD',
     long_description=__doc__,
     install_requires=[
-        'cassandra==0.1.4'
-    ],
-    dependency_links=[
-        'https://github.com/mattrobenolt/python-driver/archive/4faa2954a1027fd8f92bb5efa86e27d21291c2e6.zip#egg=cassandra-0.1.4',
+        'cassandra-driver'
     ],
     py_modules=['casscache'],
     test_suite='test_casscache',
