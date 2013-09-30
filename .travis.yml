@@ -9,6 +9,7 @@ before_install:
  - sudo service cassandra start
  - sleep 3
 install:
+ - "easy_install -U distribute"
  - "pip install . --use-mirrors"
  - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi"
 script: "python setup.py test"
