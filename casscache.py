@@ -19,13 +19,6 @@ except ImportError:
 
 from cassandra.cluster import Cluster, Session
 
-try:
-    from cassandra.io.libevreactor import LibevConnection
-    ConnectionClass = LibevConnection
-except ImportError:
-    from cassandra.io.asyncorereactor import AsyncoreConnection
-    ConnectionClass = AsyncoreConnection
-
 
 if not hasattr(Session, 'execute_many'):
     def _execute_many(self, queries, trace=False):
@@ -56,7 +49,6 @@ class Client(object):
             hosts.add(host)
 
         self._cluster = Cluster(hosts, port=int(port), **kwargs)
-        self._cluster.connection_class = ConnectionClass
         self._session = self._cluster.connect()
 
         self.keyspace = keyspace
