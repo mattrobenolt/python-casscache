@@ -85,13 +85,18 @@ class Client(object):
 
     def set(self, key, val, time=0, min_compress_len=0):
         statement = self._get_set_statement(time)
-        self._session.execute(statement.bind((key,) + self._val_to_store_info(val)))
+        if statement is not None:
+            self._session.execute(statement.bind((key,) + self._val_to_store_info(val)))
         return True
 
     def set_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
         statement = self._get_set_statement(time)
-        prefixed_keys = self._prefix_keys(mapping.keys(), key_prefix)
-        list(self._session.execute_many((statement.bind((prefixed_keys[idx],) + self._val_to_store_info(value)) for idx, value in enumerate(mapping.values()))))
+        if statement is not None:
+            prefixed_keys = self._prefix_keys(mapping.keys(), key_prefix)
+            list(self._session.execute_many((
+                statement.bind((prefixed_keys[idx],) + self._val_to_store_info(value))
+                for idx, value in enumerate(mapping.values())
+            )))
         return 0
 
     def delete(self, key, time=0):
@@ -102,7 +107,10 @@ class Client(object):
     def delete_multi(self, keys, time=0, key_prefix=''):
         statement = self._DELETE
         prefixed_keys = self._prefix_keys(keys, key_prefix)
-        list(self._session.execute_many((statement.bind((key,)) for key in prefixed_keys)))
+        list(self._session.execute_many((
+            statement.bind((key,))
+            for key in prefixed_keys
+        )))
         return 1
 
     def flush_all(self):
@@ -112,6 +120,8 @@ class Client(object):
         self._cluster.shutdown()
 
     def _get_set_statement(self, time=0):
+        if time < 0:
+            return None
         if time == 0:
             return self._SET
         return self._session.prepare(self._SET_TTL % time)
@@ -135,7 +145,8 @@ class Client(object):
 
     def _val_to_store_info(self, val):
         """
-           Transform val to a storable representation, returning a tuple of the flags, the length of the new value, and the new value itself.
+        Transform val to a storable representation,
+        returning a tuple of the flags, the length of the new value, and the new value itself.
         """
         if isinstance(val, str):
             return val, 0

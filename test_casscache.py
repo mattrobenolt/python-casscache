@@ -108,5 +108,9 @@ class CasscacheTests(unittest.TestCase):
         self.client.flush_all()
         self.assertIsNone(self.client.get('lol'))
 
+    def test_set_and_expire(self):
+        self.client.set('lol', 'derp', -1)
+        self.assertIsNone(self.client.get('lol'))
+
 if __name__ == '__main__':
     unittest.main()
