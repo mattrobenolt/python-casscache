@@ -22,7 +22,7 @@ setup(
     license='BSD',
     long_description=__doc__,
     install_requires=[
-        'cassandra-driver==1.0.0b5'
+        'cassandra-driver==1.0.0b6'
     ],
     py_modules=['casscache'],
     test_suite='test_casscache',
