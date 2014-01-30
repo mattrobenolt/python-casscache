@@ -10,6 +10,6 @@ before_install:
  - sleep 3
 install:
  - "easy_install -U distribute"
- - "pip install . --use-mirrors"
+ - "pip install ."
  - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi"
 script: "python setup.py test"
