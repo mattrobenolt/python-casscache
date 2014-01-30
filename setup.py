@@ -14,7 +14,7 @@ from setuptools import setup
 
 setup(
     name='casscache',
-    version='0.0.3',
+    version='0.1.0',
     author='Matt Robenolt',
     author_email='matt@ydekproductions.com',
     url='https://github.com/mattrobenolt/python-casscache',
@@ -22,7 +22,7 @@ setup(
     license='BSD',
     long_description=__doc__,
     install_requires=[
-        'cassandra-driver==1.0.0b7'
+        'cassandra-driver'
     ],
     py_modules=['casscache'],
     test_suite='test_casscache',
