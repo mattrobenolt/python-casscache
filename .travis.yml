@@ -10,5 +10,4 @@ install:
  - "easy_install -U distribute"
  - "pip install ."
  - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi"
- - "nodetool version"
 script: "python setup.py test"
