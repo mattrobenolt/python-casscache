@@ -7,6 +7,9 @@ import sys
 from casscache import Client
 from cassandra.cluster import Cluster
 
+if sys.version_info[0] == 3:
+    long = int
+
 TEST_KEYSPACE = 'casscache_test'
 TEST_COLUMNFAMILY = 'casscache'
 
@@ -94,12 +97,12 @@ class CasscacheTests(unittest.TestCase):
         self.assertIsInstance(res, int)
         self.assertEqual(res, 1)
 
-    @unittest.skipIf(sys.version_info[0] == 3)
+    @unittest.skipIf(sys.version_info[0] == 3, "python3 doesn't have a long type")
     def test_marshal_long(self):
-        self.client.set('lol', 1L)
+        self.client.set('lol', long(1))
         res = self.client.get('lol')
         self.assertIsInstance(res, long)
-        self.assertEqual(res, 1L)
+        self.assertEqual(res, long(1))
 
     def test_marshal_pickle(self):
         self.client.set('lol', [1, 2])
