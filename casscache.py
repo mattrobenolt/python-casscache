@@ -18,6 +18,7 @@ except ImportError:
     import pickle  # noqa
 
 from cassandra.cluster import Cluster, Session
+from cassandra.protocol import SyntaxException
 
 
 if not hasattr(Session, 'execute_many'):
@@ -49,6 +50,7 @@ class Client(object):
             hosts.add(host)
 
         self._cluster = Cluster(hosts, port=int(port), **kwargs)
+        self._cluster.protocol_version = 1
         self._session = self._cluster.connect()
 
         self.keyspace = keyspace
@@ -59,9 +61,14 @@ class Client(object):
         self._GET = self._session.prepare("SELECT value, flags FROM %s WHERE key = ? LIMIT 1" % self.columnfamily)
         self._SET = self._session.prepare("INSERT INTO %s (key, value, flags) VALUES (?, ?, ?)" % self.columnfamily)
         self._DELETE = self._session.prepare("DELETE FROM %s WHERE key = ?" % self.columnfamily)
-        # Cannot be prepared with a dynamic TTL pre C* 2.0
-        # See https://issues.apache.org/jira/browse/CASSANDRA-4450
-        self._SET_TTL = "INSERT INTO %s (key, value, flags) VALUES (?, ?, ?) USING TTL %%d" % self.columnfamily
+        try:
+            self._SET_TTL = self._session.prepare("INSERT INTO %s (key, value, flags) VALUES (?, ?, ?) USING TTL ?" % self.columnfamily)
+            self._can_prepare_ttl = True
+        except SyntaxException:
+            # Cannot be prepared with a dynamic TTL pre C* 2.0
+            # See https://issues.apache.org/jira/browse/CASSANDRA-4450
+            self._SET_TTL = "INSERT INTO %s (key, value, flags) VALUES (?, ?, ?) USING TTL %%d" % self.columnfamily
+            self._can_prepare_ttl = False
 
     def get(self, key):
         statement = self._GET
@@ -84,9 +91,16 @@ class Client(object):
         return result
 
     def set(self, key, val, time=0, min_compress_len=0):
-        statement = self._get_set_statement(time)
-        if statement is not None:
+        if time == 0:
+            statement = self._SET
             self._session.execute(statement.bind((key,) + self._val_to_store_info(val)))
+        elif time > 0:
+            statement = self._SET_TTL
+            if self._can_prepare_ttl:
+                self._session.execute(statement.bind((key,) + self._val_to_store_info(val) + (time,)))
+            else:
+                statement = self._session.prepare(self._SET_TTL % time)
+                self._session.execute(statement.bind((key,) + self._val_to_store_info(val)))
         return True
 
     def set_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
@@ -124,7 +138,7 @@ class Client(object):
             return None
         if time == 0:
             return self._SET
-        return self._session.prepare(self._SET_TTL % time)
+        return
 
     def _handle_row(self, rows):
         try:
