@@ -17,8 +17,15 @@ try:
 except ImportError:
     import pickle  # noqa
 
+import sys
 from cassandra.cluster import Cluster, Session
 from cassandra.protocol import SyntaxException
+
+
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    long = int
 
 
 if not hasattr(Session, 'execute_many'):
